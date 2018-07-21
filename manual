@@ -1,0 +1,37 @@
+yum update
+reboot
+yum install -y wget git zile nano net-tools docker-1.13.1 bind-utils iptables-services bridge-utils bash-completion kexec-tools sos psacct openssl-devel httpd-tools NetworkManager python-cryptography python2-pip python-devel python-passlib java-1.8.0-openjdk-headless "@Development Tools"
+yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+sed -i -e "s/^enabled=1/enabled=0/" /etc/yum.repos.d/epel.repo
+systemctl start NetworkManager
+systemctl enable NetworkManager
+yum -y --enablerepo=epel install ansible pyOpenSSL  (master)
+git clone https://github.com/openshift/openshift-ansible.git
+cd openshift-ansible && git fetch && git checkout release-3.9 && cd ..
+vi /etc/hosts
+192.168.189.180 master console console.vipin.io
+192.168.189.179 node01 node01.vipin.io
+192.168.189.182 node02 node02.vipin.io
+
+systemctl stop docker
+systemctl restart docker
+systemctl enable docker
+
+ ssh-keygen
+ for host in 192.168.189.180 \
+          192.168.189.179 \
+		  192.168.189.182; \
+      do ssh-copy-id -i ~/.ssh/id_rsa.pub $host; \
+    done
+	
+vi inventory.ini
+ansible-playbook -i inventory.ini openshift-ansible/playbooks/prerequisites.yml
+ansible-playbook -i inventory.ini openshift-ansible/playbooks/deploy_cluster.yml
+
+htpasswd -c /etc/origin/master/htpasswd admin
++++++++++++++++++++++++++++++++++++++++++++++
+.
+oc whoami -t
+oc new-project hexboardnew
+oc new-app -f https://raw.githubusercontent.com/2015-Middleware-Keynote/hexboard/master/app_template.json -p ACCESS_TOKEN=$(oc whoami -t)
+oc get builds -w
